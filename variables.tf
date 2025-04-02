@@ -33,3 +33,15 @@ variable "ami_id" {
   type        = string
   default     = "ami-00a929b66ed6e0de6" # Amazon Linux 2 AMI for us-east-1
 }
+
+ariable "key_name" {
+  description = "Name of the EC2 key pair"
+  type        = string
+  default     = "teraform-aws-nginx"
+}
+
+variable "availability_zones" {
+  description = "List of availability zones for subnet creation"
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b", "us-east-1c"]
+}
