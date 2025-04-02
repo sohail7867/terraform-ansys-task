@@ -21,3 +21,15 @@ variable "private_subnets" {
   type        = list(string)
   default     = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
 }
+
+variable "instance_type" {
+  description = "Instance type for EC2"
+  type        = string
+  default     = "t2.micro"
+}
+
+variable "ami_id" {
+  description = "AMI ID to use for EC2 instances"
+  type        = string
+  default     = "ami-00a929b66ed6e0de6" # Amazon Linux 2 AMI for us-east-1
+}
