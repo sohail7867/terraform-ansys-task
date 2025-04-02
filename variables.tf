@@ -34,7 +34,7 @@ variable "ami_id" {
   default     = "ami-00a929b66ed6e0de6" # Amazon Linux 2 AMI for us-east-1
 }
 
-ariable "key_name" {
+variable "key_name" {
   description = "Name of the EC2 key pair"
   type        = string
   default     = "teraform-aws-nginx"
