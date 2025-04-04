@@ -11,66 +11,62 @@ provider "aws" {
   region = var.region
 }
 
-resource "aws_vpc" "main" {
-  cidr_block = var.vpc_cidr
-  enable_dns_support   = true
-  enable_dns_hostnames = true
+module "vpc" {
+  source     = "./modules/vpc"
+  vpc_cidr   = var.vpc_cidr
+  vpc_name   = var.vpc_name
 }
 
-resource "aws_subnet" "public_subnet" {
-  count                  = length(var.public_subnets)
-  vpc_id                 = aws_vpc.main.id
-  cidr_block             = var.public_subnets[count.index]
-  availability_zone      = var.availability_zones[count.index]
-  map_public_ip_on_launch = true
+module "subnets" {
+  source               = "./modules/subnets"
+  vpc_id               = module.vpc.vpc_id
+  azs                  = var.azs
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  private_subnet_cidrs = var.private_subnet_cidrs
 }
 
-resource "aws_subnet" "private_subnet" {
-  count                  = length(var.private_subnets)
-  vpc_id                 = aws_vpc.main.id
-  cidr_block             = var.private_subnets[count.index]
-  availability_zone      = var.availability_zones[count.index]
-  map_public_ip_on_launch = false
+module "internet_gateway" {
+  source = "./modules/internet-gateway"
+  vpc_id = module.vpc.vpc_id
 }
 
-resource "aws_internet_gateway" "main" {
-  vpc_id = aws_vpc.main.id
+module "nat_gateway" {
+  source        = "./modules/nat-gateway"
+  public_subnet = module.subnets.public_subnet_ids[0]
+  az            = var.azs[0]
 }
 
-resource "aws_route_table" "public_route_table" {
-  vpc_id = aws_vpc.main.id
+module "route_tables" {
+  source             = "./modules/route-tables"
+  vpc_id             = module.vpc.vpc_id
+  igw_id             = module.internet_gateway.igw_id
+  nat_gateway_id     = module.nat_gateway.nat_id
+  public_subnet_ids  = module.subnets.public_subnet_ids
+  private_subnet_ids = module.subnets.private_subnet_ids
 }
 
-resource "aws_route" "internet_access" {
-  route_table_id         = aws_route_table.public_route_table.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.main.id
+module "ec2" {
+  source           = "./modules/ec2"
+  public_subnet_id = module.subnets.public_subnet_ids[0]
+  instance_type    = var.instance_type
+  key_name         = var.key_name
+  ami_id           = var.ami_id
+  instance_name    = var.instance_name
+  security_group_ids = [module.security_group.security_group_id]
+  iam_instance_profile = module.iam.instance_profile_name
 }
 
-resource "aws_route_table_association" "public_association" {
-  count          = length(var.public_subnets)
-  subnet_id      = aws_subnet.public_subnet[count.index].id
-  route_table_id = aws_route_table.public_route_table.id
+module "security_group" {
+  source      = "./modules/security-group"
+  name        = "web-sg"
+  description = "Allow HTTP and SSH access"
+  vpc_id      = module.vpc.vpc_id  # Assuming the VPC is created in the VPC module
+  allowed_http_ip_cidr = ["0.0.0.0/0"]  # Pass as list here
+  allowed_ssh_ip_cidr  = ["80.5.85.5/32"]  # Pass as list here
 }
 
-resource "aws_instance" "nginx" {
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  subnet_id              = aws_subnet.public_subnet[0].id
-  associate_public_ip_address = true
-  key_name               = var.key_name
-  security_groups        = [aws_security_group.web_sg.id]
-
-  user_data = <<-EOT
-              #!/bin/bash
-              sudo yum update -y
-              sudo amazon-linux-extras enable nginx1
-              sudo yum install nginx -y
-              sudo systemctl start nginx
-              sudo systemctl enable nginx
-              EOT
-
-  tags = {
-    Name = "Nginx-Instance"
-  }
+module "iam" {
+  source                = "./modules/iam"
+  role_name             = "ec2-role"
+  instance_profile_name = "ec2-instance-profile" 
 }
