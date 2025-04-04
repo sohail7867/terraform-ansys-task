@@ -27,6 +27,8 @@ EC2 instance running NGINX
 │   ├── security-group/
 │   ├── iam/
 │   └── ec2/
+
+
 📦 Modules Overview
 Each module is responsible for a specific infrastructure component:
 
