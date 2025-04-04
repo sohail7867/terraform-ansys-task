@@ -14,9 +14,6 @@ Security group with HTTP and SSH access
 EC2 instance running NGINX
 
 📁 Project Structure
-csharp
-Copy
-Edit
 .
 ├── main.tf                  # Main orchestration of modules
 ├── variables.tf             # Input variables
