@@ -29,7 +29,7 @@
 ```
 
 ## 📦 Modules Overview
-# Each module is responsible for a specific infrastructure component:
+## Each module is responsible for a specific infrastructure component:
 
 * VPC Module: Creates a VPC with a CIDR block
 
